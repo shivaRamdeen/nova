@@ -4429,6 +4429,60 @@ class LibvirtDriver(driver.ComputeDriver):
             'ramdisk_id' if a ramdisk is needed for the rescue image and
             'kernel_id' if a kernel is needed for the rescue image.
         """
+        #SHIVA::UNIKERNEL_HACK
+        #check if unikernel is in image_meta.tag if image_meta.tag == "unikernel", then:
+        #
+        #as a beginning to the hack, only minimal configuration...CHANGE THIS LATER!!!
+        #self.virt_type = None
+        """ the following are parameters of the guest object which is returned at the end.
+        self.uuid = None
+        self.name = None
+        self.memory = 500 * units.Mi
+        self.membacking = None
+        self.memtune = None
+        self.numatune = None
+        self.vcpus = 1
+        self.cpuset = None
+        self.cpu = None
+        self.cputune = None
+        self.features = []
+        self.clock = None
+        self.sysinfo = None
+        self.os_type = None
+        self.os_loader = None
+        self.os_loader_type = None
+        self.os_kernel = None
+        self.os_initrd = None
+        self.os_cmdline = None
+        self.os_root = None
+        self.os_init_path = None
+        self.os_boot_dev = []
+        self.os_smbios = None
+        self.os_mach_type = None
+        self.os_bootmenu = False
+        self.devices = []
+        self.metadata = []
+        self.idmaps = []
+        self.perf_events = []"""
+
+        #we will not populate the parameters as we like.
+        #flavor = instance.flavor
+        #inst_path = libvirt_utils.get_instance_path(instance)
+        ##we dont want any disk mapping at this time (Does a unikernel need a disk?)
+        #virt_type = CONF.libvirt.virt_type #consider hard coding? since QEMU is the only virt_type that we are sure about.
+        ##initialize the guest object
+        #guest = vconfig.LibvirtConfigGuest()
+        #guest.virt_type = virt_type
+        #guest.name = instance.name
+        #guest.uuid = instance.uuid
+        #guest.memory = flavor.memory_mb * units.Ki
+        #guest.vcpus = flavor.vcpus
+        #
+        #
+        #
+        #
+        #
+        #else: do normal operation to get boot config
         flavor = instance.flavor
         inst_path = libvirt_utils.get_instance_path(instance)
         disk_mapping = disk_info['mapping']
