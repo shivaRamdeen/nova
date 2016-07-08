@@ -2643,10 +2643,7 @@ class LibvirtDriver(driver.ComputeDriver):
     # for xenapi(tr3buchet)
     def spawn(self, context, instance, image_meta, injected_files,
               admin_password, network_info=None, block_device_info=None):
-        #print instance to see what information we can use
-        print(instance)
-        #print image_meta to see what info we can use
-        print(image_meta)
+                  
         disk_info = blockinfo.get_disk_info(CONF.libvirt.virt_type,
                                             instance,
                                             image_meta,
@@ -2666,8 +2663,6 @@ class LibvirtDriver(driver.ComputeDriver):
                                   disk_info, image_meta,
                                   block_device_info=block_device_info,
                                   write_to_disk=True)
-        #print XML to see what configurations are generated.
-        print(xml)
         self._create_domain_and_network(
             context, xml, instance, network_info, disk_info,
             block_device_info=block_device_info,
@@ -4431,233 +4426,296 @@ class LibvirtDriver(driver.ComputeDriver):
         """
         #SHIVA::UNIKERNEL_HACK
         #check if unikernel is in image_meta.tag if image_meta.tag == "unikernel", then:
-        #
-        #as a beginning to the hack, only minimal configuration...CHANGE THIS LATER!!!
-        #self.virt_type = None
-        """ the following are parameters of the guest object which is returned at the end.
-        self.uuid = None
-        self.name = None
-        self.memory = 500 * units.Mi
-        self.membacking = None
-        self.memtune = None
-        self.numatune = None
-        self.vcpus = 1
-        self.cpuset = None
-        self.cpu = None
-        self.cputune = None
-        self.features = []
-        self.clock = None
-        self.sysinfo = None
-        self.os_type = None
-        self.os_loader = None
-        self.os_loader_type = None
-        self.os_kernel = None
-        self.os_initrd = None
-        self.os_cmdline = None
-        self.os_root = None
-        self.os_init_path = None
-        self.os_boot_dev = []
-        self.os_smbios = None
-        self.os_mach_type = None
-        self.os_bootmenu = False
-        self.devices = []
-        self.metadata = []
-        self.idmaps = []
-        self.perf_events = []"""
-
-        #we will not populate the parameters as we like.
-        #flavor = instance.flavor
-        #inst_path = libvirt_utils.get_instance_path(instance)
-        ##we dont want any disk mapping at this time (Does a unikernel need a disk?)
-        #virt_type = CONF.libvirt.virt_type #consider hard coding? since QEMU is the only virt_type that we are sure about.
-        ##initialize the guest object
-        #guest = vconfig.LibvirtConfigGuest()
-        #guest.virt_type = virt_type
-        #guest.name = instance.name
-        #guest.uuid = instance.uuid
-        #guest.memory = flavor.memory_mb * units.Ki
-        #guest.vcpus = flavor.vcpus
-        ##allowed_cpus = hardware.get_vcpu_pin_set()
-        #pci_devs = pci_manager.get_instance_pci_devs(instance, 'all')
-        #
-        #guest_numa_config = self._get_guest_numa_config(
-        #    instance.numa_topology, flavor, allowed_cpus, image_meta)
-        #
-        #
-        #
-        #
-        #
-        #
-        #
+        if instance.system_metedata['image_kernel-type'] == 'unikernel':
+            LOG.info('Booting instance as a unikernel')
+            #set the following parameters.
+            """ the following are parameters of the guest object which is returned at the end.
+            self.uuid = None -
+            self.name = None -
+            self.memory = 500 * units.Mi -
+            self.membacking = None 
+            self.memtune = None
+            self.numatune = None
+            self.vcpus = 1 -
+            self.cpuset = None -
+            self.cpu = None -
+            self.cputune = None
+            self.features = []
+            self.clock = None -
+            self.sysinfo = None
+            self.os_type = None
+            self.os_loader = None
+            self.os_loader_type = None
+            self.os_kernel = None -
+            self.os_initrd = None
+            self.os_cmdline = None #we will set this later based on user_data
+            self.os_root = None
+            self.os_init_path = None
+            self.os_boot_dev = []
+            self.os_smbios = None
+            self.os_mach_type = None
+            self.os_bootmenu = False
+            self.devices = []
+            self.metadata = []
+            self.idmaps = []
+            self.perf_events = []"""
+    
+            #we will populate the parameters as we see fit.
+            nocmdline = ""
+            flavor = instance.flavor
+            inst_path = libvirt_utils.get_instance_path(instance)
+            ##we dont want any disk mapping at this time (Does a unikernel need a disk?)
+            virt_type = CONF.libvirt.virt_type #consider hard coding? since QEMU is the only virt_type that we are sure about.
+            ##initialize the guest object
+            guest = vconfig.LibvirtConfigGuest()
+            guest.virt_type = virt_type
+            guest.name = instance.name
+            guest.uuid = instance.uuid
+            guest.memory = flavor.memory_mb * units.Ki
+            guest.vcpus = flavor.vcpus
+            
+            allowed_cpus = hardware.get_vcpu_pin_set()
+            
+            #we dont need pci devices yet...look into this!
+            #pci_devs = pci_manager.get_instance_pci_devs(instance, 'all')
+            
+            guest_numa_config = self._get_guest_numa_config(
+                instance.numa_topology, flavor, allowed_cpus, image_meta)
+            #
+            guest.cpuset = guest_numa_config.cpuset
+            guest.cputune = guest_numa_config.cputune
+            guest.numatune = guest_numa_config.numatune
+            #
+            #No memory backing (hugepages etc.)
+            #No metadata config
+            #No idmaps
+            #No perf events
+            #No cputune
+            #Do CPU config:
+            guest.cpu = self._get_guest_cpu_config(
+                flavor, image_meta, guest_numa_config.numaconfig,
+                instance.numa_topology)
+            #
+            #sync guest vcpu model
+            instance.vcpu_model = self._cpu_config_to_vcpu_model(
+                guest.cpu, instance.vcpu_model)
+            #
+            #No disk mappings
+            #set os type: 
+            guest.os_type = self._get_guest_os_type(virt_type))
+            #
+            #configure guest by virt type
+            caps = self._host.get_capabilities()
+    
+            self._configure_guest_by_virt_type(guest, virt_type, caps, instance,
+                                               image_meta, flavor,
+                                               root_device_name)
+            #
+            #set kernel path
+            guest.os_kernel = os.path.join(inst_path, "kernel")
+            #set cmdline to user defined variable or leave empty
+            guest.os_cmdline = ("%s" % (instance.system_metadata[image_cmdline] or nocmdline))
+            #
+            #
+            #No Features
+            #No clock
+            #No storgae configs
+            #No vif...for the moment!!! must add later!!!
+            #No console
+            #No pointer
+            #No Channels
+            #
+            #setup vnc...consider setting up vnc always
+            add_video_driver = False
+            if ((CONF.vnc.enabled and
+                 virt_type not in ('lxc', 'uml'))):
+                graphics = vconfig.LibvirtConfigGuestGraphics()
+                graphics.type = "vnc"
+                graphics.keymap = CONF.vnc.keymap
+                graphics.listen = CONF.vnc.vncserver_listen
+                guest.add_device(graphics)
+                add_video_driver = True
+            if add_video_driver:
+                self._add_video_driver(guest, image_meta, flavor)
+            #
+            #No agent
+            #No PCI devices
+            #No watchdogs
+            #No balloon
+            #end configuration
+            return guest
+            
         #else: do normal operation to get boot config
-        flavor = instance.flavor
-        inst_path = libvirt_utils.get_instance_path(instance)
-        disk_mapping = disk_info['mapping']
-
-        virt_type = CONF.libvirt.virt_type
-        guest = vconfig.LibvirtConfigGuest()
-        guest.virt_type = virt_type
-        guest.name = instance.name
-        guest.uuid = instance.uuid
-        # We are using default unit for memory: KiB
-        guest.memory = flavor.memory_mb * units.Ki
-        guest.vcpus = flavor.vcpus
-        allowed_cpus = hardware.get_vcpu_pin_set()
-        pci_devs = pci_manager.get_instance_pci_devs(instance, 'all')
-
-        guest_numa_config = self._get_guest_numa_config(
-            instance.numa_topology, flavor, allowed_cpus, image_meta)
-
-        guest.cpuset = guest_numa_config.cpuset
-        guest.cputune = guest_numa_config.cputune
-        guest.numatune = guest_numa_config.numatune
-
-        guest.membacking = self._get_guest_memory_backing_config(
-            instance.numa_topology,
-            guest_numa_config.numatune,
-            flavor)
-
-        guest.metadata.append(self._get_guest_config_meta(context,
-                                                          instance))
-        guest.idmaps = self._get_guest_idmaps()
-
-        for event in self._supported_perf_events:
-            guest.add_perf_event(event)
-
-        self._update_guest_cputune(guest, flavor, virt_type)
-
-        guest.cpu = self._get_guest_cpu_config(
-            flavor, image_meta, guest_numa_config.numaconfig,
-            instance.numa_topology)
-
-        # Notes(yjiang5): we always sync the instance's vcpu model with
-        # the corresponding config file.
-        instance.vcpu_model = self._cpu_config_to_vcpu_model(
-            guest.cpu, instance.vcpu_model)
-
-        if 'root' in disk_mapping:
-            root_device_name = block_device.prepend_dev(
-                disk_mapping['root']['dev'])
+        
         else:
-            root_device_name = None
-
-        if root_device_name:
-            # NOTE(yamahata):
-            # for nova.api.ec2.cloud.CloudController.get_metadata()
-            instance.root_device_name = root_device_name
-
-        guest.os_type = (vm_mode.get_from_instance(instance) or
-                self._get_guest_os_type(virt_type))
-        caps = self._host.get_capabilities()
-
-        self._configure_guest_by_virt_type(guest, virt_type, caps, instance,
-                                           image_meta, flavor,
-                                           root_device_name)
-        if virt_type not in ('lxc', 'uml'):
-            self._conf_non_lxc_uml(virt_type, guest, root_device_name, rescue,
-                    instance, inst_path, image_meta, disk_info)
-
-        self._set_features(guest, instance.os_type, caps, virt_type)
-        self._set_clock(guest, instance.os_type, image_meta, virt_type)
-
-        storage_configs = self._get_guest_storage_config(
-                instance, image_meta, disk_info, rescue, block_device_info,
-                flavor, guest.os_type)
-        for config in storage_configs:
-            guest.add_device(config)
-
-        for vif in network_info:
-            config = self.vif_driver.get_config(
-                instance, vif, image_meta,
-                flavor, virt_type, self._host)
-            guest.add_device(config)
-
-        consolepty = self._create_consoles(virt_type, guest, instance, flavor,
-                                           image_meta, caps)
-        if virt_type != 'parallels':
-            consolepty.type = "pty"
-            guest.add_device(consolepty)
-
-        pointer = self._get_guest_pointer_model(guest.os_type, image_meta)
-        if pointer:
-            guest.add_device(pointer)
-
-        if (CONF.spice.enabled and CONF.spice.agent_enabled and
-                virt_type not in ('lxc', 'uml', 'xen')):
-            channel = vconfig.LibvirtConfigGuestChannel()
-            channel.target_name = "com.redhat.spice.0"
-            guest.add_device(channel)
-
-        # NB some versions of libvirt support both SPICE and VNC
-        # at the same time. We're not trying to second guess which
-        # those versions are. We'll just let libvirt report the
-        # errors appropriately if the user enables both.
-        add_video_driver = False
-        if ((CONF.vnc.enabled and
-             virt_type not in ('lxc', 'uml'))):
-            graphics = vconfig.LibvirtConfigGuestGraphics()
-            graphics.type = "vnc"
-            graphics.keymap = CONF.vnc.keymap
-            graphics.listen = CONF.vnc.vncserver_listen
-            guest.add_device(graphics)
-            add_video_driver = True
-
-        if (CONF.spice.enabled and
-                virt_type not in ('lxc', 'uml', 'xen')):
-            graphics = vconfig.LibvirtConfigGuestGraphics()
-            graphics.type = "spice"
-            graphics.keymap = CONF.spice.keymap
-            graphics.listen = CONF.spice.server_listen
-            guest.add_device(graphics)
-            add_video_driver = True
-
-        if add_video_driver:
-            self._add_video_driver(guest, image_meta, flavor)
-
-        # Qemu guest agent only support 'qemu' and 'kvm' hypervisor
-        if virt_type in ('qemu', 'kvm'):
-            self._set_qemu_guest_agent(guest, flavor, instance, image_meta)
-
-        if virt_type in ('xen', 'qemu', 'kvm'):
-            for pci_dev in pci_manager.get_instance_pci_devs(instance):
-                guest.add_device(self._get_guest_pci_device(pci_dev))
-        else:
-            if len(pci_devs) > 0:
-                raise exception.PciDeviceUnsupportedHypervisor(
-                    type=virt_type)
-
-        if 'hw_watchdog_action' in flavor.extra_specs:
-            LOG.warning(_LW('Old property name "hw_watchdog_action" is now '
-                         'deprecated and will be removed in the next release. '
-                         'Use updated property name '
-                         '"hw:watchdog_action" instead'), instance=instance)
-        # TODO(pkholkin): accepting old property name 'hw_watchdog_action'
-        #                should be removed in the next release
-        watchdog_action = (flavor.extra_specs.get('hw_watchdog_action') or
-                           flavor.extra_specs.get('hw:watchdog_action')
-                           or 'disabled')
-        watchdog_action = image_meta.properties.get('hw_watchdog_action',
-                                                    watchdog_action)
-
-        # NB(sross): currently only actually supported by KVM/QEmu
-        if watchdog_action != 'disabled':
-            if watchdog_actions.is_valid_watchdog_action(watchdog_action):
-                bark = vconfig.LibvirtConfigGuestWatchdog()
-                bark.action = watchdog_action
-                guest.add_device(bark)
+            flavor = instance.flavor
+            inst_path = libvirt_utils.get_instance_path(instance)
+            disk_mapping = disk_info['mapping']
+    
+            virt_type = CONF.libvirt.virt_type
+            guest = vconfig.LibvirtConfigGuest()
+            guest.virt_type = virt_type
+            guest.name = instance.name
+            guest.uuid = instance.uuid
+            # We are using default unit for memory: KiB
+            guest.memory = flavor.memory_mb * units.Ki
+            guest.vcpus = flavor.vcpus
+            allowed_cpus = hardware.get_vcpu_pin_set()
+            pci_devs = pci_manager.get_instance_pci_devs(instance, 'all')
+    
+            guest_numa_config = self._get_guest_numa_config(
+                instance.numa_topology, flavor, allowed_cpus, image_meta)
+    
+            guest.cpuset = guest_numa_config.cpuset
+            guest.cputune = guest_numa_config.cputune
+            guest.numatune = guest_numa_config.numatune
+    
+            guest.membacking = self._get_guest_memory_backing_config(
+                instance.numa_topology,
+                guest_numa_config.numatune,
+                flavor)
+    
+            guest.metadata.append(self._get_guest_config_meta(context,
+                                                              instance))
+            guest.idmaps = self._get_guest_idmaps()
+    
+            for event in self._supported_perf_events:
+                guest.add_perf_event(event)
+    
+            self._update_guest_cputune(guest, flavor, virt_type)
+    
+            guest.cpu = self._get_guest_cpu_config(
+                flavor, image_meta, guest_numa_config.numaconfig,
+                instance.numa_topology)
+    
+            # Notes(yjiang5): we always sync the instance's vcpu model with
+            # the corresponding config file.
+            instance.vcpu_model = self._cpu_config_to_vcpu_model(
+                guest.cpu, instance.vcpu_model)
+    
+            if 'root' in disk_mapping:
+                root_device_name = block_device.prepend_dev(
+                    disk_mapping['root']['dev'])
             else:
-                raise exception.InvalidWatchdogAction(action=watchdog_action)
-
-        # Memory balloon device only support 'qemu/kvm' and 'xen' hypervisor
-        if (virt_type in ('xen', 'qemu', 'kvm') and
-                CONF.libvirt.mem_stats_period_seconds > 0):
-            balloon = vconfig.LibvirtConfigMemoryBalloon()
+                root_device_name = None
+    
+            if root_device_name:
+                # NOTE(yamahata):
+                # for nova.api.ec2.cloud.CloudController.get_metadata()
+                instance.root_device_name = root_device_name
+    
+            guest.os_type = (vm_mode.get_from_instance(instance) or
+                    self._get_guest_os_type(virt_type))
+            caps = self._host.get_capabilities()
+    
+            self._configure_guest_by_virt_type(guest, virt_type, caps, instance,
+                                               image_meta, flavor,
+                                               root_device_name)
+            if virt_type not in ('lxc', 'uml'):
+                self._conf_non_lxc_uml(virt_type, guest, root_device_name, rescue,
+                        instance, inst_path, image_meta, disk_info)
+    
+            self._set_features(guest, instance.os_type, caps, virt_type)
+            self._set_clock(guest, instance.os_type, image_meta, virt_type)
+    
+            storage_configs = self._get_guest_storage_config(
+                    instance, image_meta, disk_info, rescue, block_device_info,
+                    flavor, guest.os_type)
+            for config in storage_configs:
+                guest.add_device(config)
+    
+            for vif in network_info:
+                config = self.vif_driver.get_config(
+                    instance, vif, image_meta,
+                    flavor, virt_type, self._host)
+                guest.add_device(config)
+    
+            consolepty = self._create_consoles(virt_type, guest, instance, flavor,
+                                               image_meta, caps)
+            if virt_type != 'parallels':
+                consolepty.type = "pty"
+                guest.add_device(consolepty)
+    
+            pointer = self._get_guest_pointer_model(guest.os_type, image_meta)
+            if pointer:
+                guest.add_device(pointer)
+    
+            if (CONF.spice.enabled and CONF.spice.agent_enabled and
+                    virt_type not in ('lxc', 'uml', 'xen')):
+                channel = vconfig.LibvirtConfigGuestChannel()
+                channel.target_name = "com.redhat.spice.0"
+                guest.add_device(channel)
+    
+            # NB some versions of libvirt support both SPICE and VNC
+            # at the same time. We're not trying to second guess which
+            # those versions are. We'll just let libvirt report the
+            # errors appropriately if the user enables both.
+            add_video_driver = False
+            if ((CONF.vnc.enabled and
+                 virt_type not in ('lxc', 'uml'))):
+                graphics = vconfig.LibvirtConfigGuestGraphics()
+                graphics.type = "vnc"
+                graphics.keymap = CONF.vnc.keymap
+                graphics.listen = CONF.vnc.vncserver_listen
+                guest.add_device(graphics)
+                add_video_driver = True
+    
+            if (CONF.spice.enabled and
+                    virt_type not in ('lxc', 'uml', 'xen')):
+                graphics = vconfig.LibvirtConfigGuestGraphics()
+                graphics.type = "spice"
+                graphics.keymap = CONF.spice.keymap
+                graphics.listen = CONF.spice.server_listen
+                guest.add_device(graphics)
+                add_video_driver = True
+    
+            if add_video_driver:
+                self._add_video_driver(guest, image_meta, flavor)
+    
+            # Qemu guest agent only support 'qemu' and 'kvm' hypervisor
             if virt_type in ('qemu', 'kvm'):
-                balloon.model = 'virtio'
+                self._set_qemu_guest_agent(guest, flavor, instance, image_meta)
+    
+            if virt_type in ('xen', 'qemu', 'kvm'):
+                for pci_dev in pci_manager.get_instance_pci_devs(instance):
+                    guest.add_device(self._get_guest_pci_device(pci_dev))
             else:
-                balloon.model = 'xen'
-            balloon.period = CONF.libvirt.mem_stats_period_seconds
-            guest.add_device(balloon)
+                if len(pci_devs) > 0:
+                    raise exception.PciDeviceUnsupportedHypervisor(
+                        type=virt_type)
+    
+            if 'hw_watchdog_action' in flavor.extra_specs:
+                LOG.warning(_LW('Old property name "hw_watchdog_action" is now '
+                             'deprecated and will be removed in the next release. '
+                             'Use updated property name '
+                             '"hw:watchdog_action" instead'), instance=instance)
+            # TODO(pkholkin): accepting old property name 'hw_watchdog_action'
+            #                should be removed in the next release
+            watchdog_action = (flavor.extra_specs.get('hw_watchdog_action') or
+                               flavor.extra_specs.get('hw:watchdog_action')
+                               or 'disabled')
+            watchdog_action = image_meta.properties.get('hw_watchdog_action',
+                                                        watchdog_action)
+    
+            # NB(sross): currently only actually supported by KVM/QEmu
+            if watchdog_action != 'disabled':
+                if watchdog_actions.is_valid_watchdog_action(watchdog_action):
+                    bark = vconfig.LibvirtConfigGuestWatchdog()
+                    bark.action = watchdog_action
+                    guest.add_device(bark)
+                else:
+                    raise exception.InvalidWatchdogAction(action=watchdog_action)
+    
+            # Memory balloon device only support 'qemu/kvm' and 'xen' hypervisor
+            if (virt_type in ('xen', 'qemu', 'kvm') and
+                    CONF.libvirt.mem_stats_period_seconds > 0):
+                balloon = vconfig.LibvirtConfigMemoryBalloon()
+                if virt_type in ('qemu', 'kvm'):
+                    balloon.model = 'virtio'
+                else:
+                    balloon.model = 'xen'
+                balloon.period = CONF.libvirt.mem_stats_period_seconds
+                guest.add_device(balloon)
 
         return guest
 
