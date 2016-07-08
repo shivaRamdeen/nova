@@ -4501,12 +4501,13 @@ class LibvirtDriver(driver.ComputeDriver):
                 guest.cpu, instance.vcpu_model)
             #
             #No disk mappings
+            root_device_name = None
             #set os type: 
             guest.os_type = self._get_guest_os_type(virt_type)
             #
             #configure guest by virt type
             caps = self._host.get_capabilities()
-    
+            
             self._configure_guest_by_virt_type(guest, virt_type, caps, instance,
                                                image_meta, flavor,
                                                root_device_name)
