@@ -4477,6 +4477,13 @@ class LibvirtDriver(driver.ComputeDriver):
         #guest.uuid = instance.uuid
         #guest.memory = flavor.memory_mb * units.Ki
         #guest.vcpus = flavor.vcpus
+        ##allowed_cpus = hardware.get_vcpu_pin_set()
+        #pci_devs = pci_manager.get_instance_pci_devs(instance, 'all')
+        #
+        #guest_numa_config = self._get_guest_numa_config(
+        #    instance.numa_topology, flavor, allowed_cpus, image_meta)
+        #
+        #
         #
         #
         #
