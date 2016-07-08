@@ -4426,7 +4426,7 @@ class LibvirtDriver(driver.ComputeDriver):
         """
         #SHIVA::UNIKERNEL_HACK
         #check if unikernel is in image_meta.tag if image_meta.tag == "unikernel", then:
-        if instance.system_metedata['image_kernel-type'] == 'unikernel':
+        if instance.system_metadata['image_kernel-type'] == 'unikernel':
             LOG.info('Booting instance as a unikernel')
             #set the following parameters.
             """ the following are parameters of the guest object which is returned at the end.
