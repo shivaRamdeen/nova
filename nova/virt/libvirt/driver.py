@@ -4474,17 +4474,17 @@ class LibvirtDriver(driver.ComputeDriver):
             guest.memory = flavor.memory_mb * units.Ki
             guest.vcpus = flavor.vcpus
             
-            allowed_cpus = hardware.get_vcpu_pin_set()
+            #allowed_cpus = hardware.get_vcpu_pin_set()
             
             #we dont need pci devices yet...look into this!
             #pci_devs = pci_manager.get_instance_pci_devs(instance, 'all')
             
-            guest_numa_config = self._get_guest_numa_config(
-                instance.numa_topology, flavor, allowed_cpus, image_meta)
+            #guest_numa_config = self._get_guest_numa_config(
+            #    instance.numa_topology, flavor, allowed_cpus, image_meta)
             #
-            guest.cpuset = guest_numa_config.cpuset
-            guest.cputune = guest_numa_config.cputune
-            guest.numatune = guest_numa_config.numatune
+            #guest.cpuset = guest_numa_config.cpuset
+            #guest.cputune = guest_numa_config.cputune
+            #guest.numatune = guest_numa_config.numatune
             #
             #No memory backing (hugepages etc.)
             #No metadata config
@@ -4492,25 +4492,25 @@ class LibvirtDriver(driver.ComputeDriver):
             #No perf events
             #No cputune
             #Do CPU config:
-            guest.cpu = self._get_guest_cpu_config(
-                flavor, image_meta, guest_numa_config.numaconfig,
-                instance.numa_topology)
+            #guest.cpu = self._get_guest_cpu_config(
+            #    flavor, image_meta, guest_numa_config.numaconfig,
+            #    instance.numa_topology)
             #
             #sync guest vcpu model
-            instance.vcpu_model = self._cpu_config_to_vcpu_model(
+            #instance.vcpu_model = self._cpu_config_to_vcpu_model(
                 guest.cpu, instance.vcpu_model)
             #
             #No disk mappings
             root_device_name = None
             #set os type: 
-            guest.os_type = self._get_guest_os_type(virt_type)
+            #guest.os_type = self._get_guest_os_type(virt_type)
             #
             #configure guest by virt type
-            caps = self._host.get_capabilities()
+            #caps = self._host.get_capabilities()
             
-            self._configure_guest_by_virt_type(guest, virt_type, caps, instance,
-                                               image_meta, flavor,
-                                               root_device_name)
+            #self._configure_guest_by_virt_type(guest, virt_type, caps, instance,
+            #                                   image_meta, flavor,
+            #                                   root_device_name)
             #
             #set kernel path
             guest.os_kernel = os.path.join(inst_path, "kernel")
