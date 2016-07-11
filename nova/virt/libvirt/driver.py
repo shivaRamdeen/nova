@@ -4515,7 +4515,7 @@ class LibvirtDriver(driver.ComputeDriver):
             #set kernel path
             guest.os_kernel = os.path.join(inst_path, "kernel")
             #set cmdline to user defined variable or leave empty
-            guest.os_cmdline = ("%s" % (instance.system_metadata[image_cmdline] or nocmdline))
+            guest.os_cmdline = ("%s" % (instance.system_metadata['image_cmdline'] or nocmdline))
             #
             #
             #No Features
