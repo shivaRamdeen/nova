@@ -4503,7 +4503,7 @@ class LibvirtDriver(driver.ComputeDriver):
             #No disk mappings
             root_device_name = None
             #set os type: 
-            #guest.os_type = self._get_guest_os_type(virt_type)
+            guest.os_type = self._get_guest_os_type(virt_type)
             #
             #configure guest by virt type
             #caps = self._host.get_capabilities()
