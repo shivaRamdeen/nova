@@ -4498,7 +4498,7 @@ class LibvirtDriver(driver.ComputeDriver):
             #
             #sync guest vcpu model
             #instance.vcpu_model = self._cpu_config_to_vcpu_model(
-                guest.cpu, instance.vcpu_model)
+            #    guest.cpu, instance.vcpu_model)
             #
             #No disk mappings
             root_device_name = None
