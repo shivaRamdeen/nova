@@ -4461,7 +4461,6 @@ class LibvirtDriver(driver.ComputeDriver):
             self.perf_events = []"""
     
             #we will populate the parameters as we see fit.
-            nocmdline = ""
             flavor = instance.flavor
             inst_path = libvirt_utils.get_instance_path(instance)
             ##we dont want any disk mapping at this time (Does a unikernel need a disk?)
@@ -4514,9 +4513,16 @@ class LibvirtDriver(driver.ComputeDriver):
             #
             #set kernel path
             guest.os_kernel = os.path.join(inst_path, "kernel")
-            #set cmdline to user defined variable or leave empty
-            guest.os_cmdline = ("%s" % (instance.system_metadata['image_cmdline'] or nocmdline))
-            #
+            #set cmdline to user defined variable or leave empty.
+	    #Source cmdline arguments from image metadata. consider revising!
+	    try:
+            	guest.os_cmdline
+		cmdlinearg  = (' "cmdline": %s' % (instance.system_metadata['image_cmdline']))
+	    except:
+	    	LOG.info("No user defined command line args. Continuing without them.")
+            	cmdlinearg=""
+	    guest.os_cmdline = '{,, "net": {,, "if": "vioif0",, "type": "inet",, "method": "dhcp",,  },, %s }..' %(cmdlinearg)
+	    #
             #
             #No Features
             #No clock
