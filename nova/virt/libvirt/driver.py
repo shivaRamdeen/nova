@@ -4521,7 +4521,12 @@ class LibvirtDriver(driver.ComputeDriver):
             #No Features
             #No clock
             #No storgae configs
-            #No vif...for the moment!!! must add later!!!
+            #VIFs:
+            for vif in network_info:
+                config = self.vif_driver.get_config(
+                    instance, vif, image_meta,
+                    flavor, virt_type, self._host)
+                guest.add_device(config)
             #No console
             #No pointer
             #No Channels
