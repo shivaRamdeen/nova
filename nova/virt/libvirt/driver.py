@@ -4551,7 +4551,7 @@ class LibvirtDriver(driver.ComputeDriver):
 		LOG.debug("!!!!!!!!!!!!!!!!!!!!!!!!!!")
 	    """ Rumprun unikernels automatically detect block devices that openstack attaches however, it does not mount them.
 	    We add the following kernel cmdline to instruct the kernel to mount the device"""
-                
+                LOG.debug("%s",(guest.devices))
             #VIFs:
             for vif in network_info:
                 config = self.vif_driver.get_config(
