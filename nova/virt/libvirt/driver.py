@@ -4575,7 +4575,7 @@ class LibvirtDriver(driver.ComputeDriver):
             
 	    net_cmdline = '"net": {,, "if": "vioif0",, "type": "inet",, "method": "dhcp",,  },,'
 	    guest.os_cmdline += net_cmdline	#network
-	    #guest.os_cmdline += secDskCmd	#disk
+	    guest.os_cmdline += secDskCmd	#disk
 	    guest.os_cmdline += ('"cmdline": "root=%s",,' % (root_device_name))	#specify root device
 	    guest.os_cmdline += ' },,'		#End
 	    #No console
