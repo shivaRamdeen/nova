@@ -4540,7 +4540,15 @@ class LibvirtDriver(driver.ComputeDriver):
                 # NOTE(yamahata):
                 # for nova.api.ec2.cloud.CloudController.get_metadata()
                 instance.root_device_name = root_device_name
-    
+
+	    #EXPERIMENTAL! setting cmdline args for mounting a secondary disk
+	    if '/dev/vdb' in disk_mapping:
+		secondary_disk=("/dev/%s" % disk_mapping['/dev/vdb']['dev'])
+	    else:
+    		secondary_disk = None
+	    if secondary_disk:
+		secDskCmd = ('"blk": {,, "source": "dev",, "path": "%s",, "fstype": "blk",, "mountpoint": "/data",, },, ' % (secondary_disk))
+
             storage_configs = self._get_guest_storage_config(
                     instance, image_meta, disk_info, rescue, block_device_info,
                     flavor, guest.os_type)
@@ -4566,8 +4574,9 @@ class LibvirtDriver(driver.ComputeDriver):
 		This instruction will always be here by default for a unikernel since openstack always attaches to at least 1 network """
             
 	    net_cmdline = '"net": {,, "if": "vioif0",, "type": "inet",, "method": "dhcp",,  },,'
-	    guest.os_cmdline += net_cmdline
-	    guest.os_cmdline += ' },,'	#End
+	    guest.os_cmdline += net_cmdline	#network
+	    guest.os_cmdline += secDskCmd	#disk
+	    guest.os_cmdline += ' },,'		#End
 	    #No console
             #No pointer
             #No Channels
