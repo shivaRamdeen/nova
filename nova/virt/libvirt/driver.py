@@ -4534,7 +4534,7 @@ class LibvirtDriver(driver.ComputeDriver):
                     disk_mapping['root']['dev'])
             else:
                 root_device_name = None
-    
+    	    LOG.debug("DiskMappings: %s" %(disk_mapping))
             if root_device_name:
                 # NOTE(yamahata):
                 # for nova.api.ec2.cloud.CloudController.get_metadata()
