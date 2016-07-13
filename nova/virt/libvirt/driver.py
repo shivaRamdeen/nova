@@ -4546,7 +4546,7 @@ class LibvirtDriver(driver.ComputeDriver):
 	    else:
     		secondary_disk = None
 	    if secondary_disk:
-		secDskCmd = ('"blk": {,, "source": "dev",, "path": "/dev/%s",, "fstype": "blk",, "mountpoint": "/data",, },, ' % (secondary_disk))
+		secDskCmd = ('"blk": {,, "source": "dev",, "path": "%s",, "fstype": "blk",, "mountpoint": "/data",, },, ' % (secondary_disk))
 
             storage_configs = self._get_guest_storage_config(
                     instance, image_meta, disk_info, rescue, block_device_info,
@@ -4574,8 +4574,8 @@ class LibvirtDriver(driver.ComputeDriver):
             
 	    net_cmdline = '"net": {,, "if": "vioif0",, "type": "inet",, "method": "dhcp",,  },,'
 	    guest.os_cmdline += net_cmdline	#network rumprun config
-	    if secondary_disk:
-	    	guest.os_cmdline += secDskCmd	#disk	rumprun config
+	    # if secondary_disk:
+	    #	guest.os_cmdline += secDskCmd	#disk	rumprun config
 	    guest.os_cmdline += ('"cmdline": "root=%s %s",,' % (root_device_name,bincmdline))	#specify root device (kernel command line), should there be a console?
 	    guest.os_cmdline += ' },,'		#End
 	    #No console
