@@ -4499,8 +4499,6 @@ class LibvirtDriver(driver.ComputeDriver):
             #instance.vcpu_model = self._cpu_config_to_vcpu_model(
             #    guest.cpu, instance.vcpu_model)
             #
-            #No disk mappings
-            root_device_name = None
             #set os type: 
             guest.os_type = self._get_guest_os_type(virt_type)
             #
@@ -4526,7 +4524,24 @@ class LibvirtDriver(driver.ComputeDriver):
             #
             #No Features
             #No clock
-            #No storgae configs
+            #No storgae configs and device maps
+             if 'root' in disk_mapping:
+                root_device_name = block_device.prepend_dev(
+                    disk_mapping['root']['dev'])
+            else:
+                root_device_name = None
+    
+            if root_device_name:
+                # NOTE(yamahata):
+                # for nova.api.ec2.cloud.CloudController.get_metadata()
+                instance.root_device_name = root_device_name
+    
+            storage_configs = self._get_guest_storage_config(
+                    instance, image_meta, disk_info, rescue, block_device_info,
+                    flavor, guest.os_type)
+            for config in storage_configs:
+                guest.add_device(config)
+                
             #VIFs:
             for vif in network_info:
                 config = self.vif_driver.get_config(
