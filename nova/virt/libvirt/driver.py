@@ -4463,6 +4463,7 @@ class LibvirtDriver(driver.ComputeDriver):
             #we will populate the parameters as we see fit.
             flavor = instance.flavor
             inst_path = libvirt_utils.get_instance_path(instance)
+            disk_mapping = disk_info['mapping']
             ##we dont want any disk mapping at this time (Does a unikernel need a disk?)
             virt_type = CONF.libvirt.virt_type #consider hard coding? since QEMU is the only virt_type that we are sure about.
             ##initialize the guest object
@@ -4472,6 +4473,8 @@ class LibvirtDriver(driver.ComputeDriver):
             guest.uuid = instance.uuid
             guest.memory = flavor.memory_mb * units.Ki
             guest.vcpus = flavor.vcpus
+	    #opening the kernel command line args
+	    guest.os_cmdline = '{,, '
             
             #allowed_cpus = hardware.get_vcpu_pin_set()
             
@@ -4512,20 +4515,21 @@ class LibvirtDriver(driver.ComputeDriver):
             #set kernel path
             guest.os_kernel = os.path.join(inst_path, "kernel")
             #set cmdline to user defined variable or leave empty.
-	    #Source cmdline arguments from image metadata. consider revising!
+	    #Get user defined kernel cmdline args.
 	    try:
             	guest.os_cmdline
 		cmdlinearg  = (' "cmdline": %s' % (instance.system_metadata['image_cmdline']))
 	    except:
 	    	LOG.info("No user defined command line args. Continuing without them.")
-            	cmdlinearg=""
-	    guest.os_cmdline = '{,, "net": {,, "if": "vioif0",, "type": "inet",, "method": "dhcp",,  },, %s },,' %(cmdlinearg)
-	    #
+            	cmdlinearg=NULL
+	    net_cmdline = '"net": {,, "if": "vioif0",, "type": "inet",, "method": "dhcp",,  },,'
+	    #guest.os_cmdline = '{,, "net": {,, "if": "vioif0",, "type": "inet",, "method": "dhcp",,  },, %s },,' %(cmdlinearg)
+    	    #
             #
             #No Features
             #No clock
             #No storgae configs and device maps
-             if 'root' in disk_mapping:
+            if 'root' in disk_mapping:
                 root_device_name = block_device.prepend_dev(
                     disk_mapping['root']['dev'])
             else:
@@ -4541,6 +4545,11 @@ class LibvirtDriver(driver.ComputeDriver):
                     flavor, guest.os_type)
             for config in storage_configs:
                 guest.add_device(config)
+		LOG.debug("!!!!!!!!SHIVAAAA!!!!!!!!!::: %s" % (config))
+		LOG.debug("!!!!!!!!!!!!!!!!!!!!!!!!!!")
+		LOG.debug("!!!!!!!!!!!!!!!!!!!!!!!!!!")
+	    """ Rumprun unikernels automatically detect block devices that openstack attaches however, it does not mount them.
+	    We add the following kernel cmdline to instruct the kernel to mount the device"""
                 
             #VIFs:
             for vif in network_info:
@@ -4548,7 +4557,16 @@ class LibvirtDriver(driver.ComputeDriver):
                     instance, vif, image_meta,
                     flavor, virt_type, self._host)
                 guest.add_device(config)
-            #No console
+	    #instruct the kernel to configure an internal network device
+	    #************THE FOLLOWING NEEDS VERIFICATION****************
+	    """ Since unikernels never get to user space. The kernel does not reach a point where network devices are configured.
+		instead, we must manually instruct the unikernel (rumprun) that we need the following device configured.
+		This instruction will always be here by default for a unikernel since openstack always attaches to at least 1 network """
+            
+	    net_cmdline = '"net": {,, "if": "vioif0",, "type": "inet",, "method": "dhcp",,  },,'
+	    guest.os_cmdline += net_cmdline
+	    guest.os_cmdline += ' },,'	#End
+	    #No console
             #No pointer
             #No Channels
             #
