@@ -4521,7 +4521,7 @@ class LibvirtDriver(driver.ComputeDriver):
 	    except:
 	    	LOG.info("No user defined command line args. Continuing without them.")
             	cmdlinearg=""
-	    guest.os_cmdline = '{,, "net": {,, "if": "vioif0",, "type": "inet",, "method": "dhcp",,  },, %s }..' %(cmdlinearg)
+	    guest.os_cmdline = '{,, "net": {,, "if": "vioif0",, "type": "inet",, "method": "dhcp",,  },, %s },,' %(cmdlinearg)
 	    #
             #
             #No Features
