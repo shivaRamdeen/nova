@@ -4543,6 +4543,7 @@ class LibvirtDriver(driver.ComputeDriver):
             storage_configs = self._get_guest_storage_config(
                     instance, image_meta, disk_info, rescue, block_device_info,
                     flavor, guest.os_type)
+	    LOG.debug("%s" % (storage_configs))
             for config in storage_configs:
                 guest.add_device(config)
 		LOG.debug("!!!!!!!!SHIVAAAA!!!!!!!!!::: %s" % (config))
