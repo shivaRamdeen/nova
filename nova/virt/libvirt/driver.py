@@ -4547,7 +4547,7 @@ class LibvirtDriver(driver.ComputeDriver):
 	    else:
     		secondary_disk = None
 	    if secondary_disk:
-		secDskCmd = ('"blk": {,, "source": "dev",, "path": "%s",, "fstype": "blk",, "mountpoint": "/data",, },, ' % (secondary_disk))
+		secDskCmd = ('"blk": {,, "source": "dev",, "path": "/dev/ld0a",, "fstype": "blk",, "mountpoint": "/data",, },, ')
 
             storage_configs = self._get_guest_storage_config(
                     instance, image_meta, disk_info, rescue, block_device_info,
