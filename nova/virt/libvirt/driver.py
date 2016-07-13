@@ -4517,11 +4517,10 @@ class LibvirtDriver(driver.ComputeDriver):
             #set cmdline to user defined variable or leave empty.
 	    #Get user defined kernel cmdline args.
 	    try:
-            	guest.os_cmdline
-		cmdlinearg  = (' "cmdline": %s' % (instance.system_metadata['image_cmdline']))
+		bincmdline  = ('%s' % (instance.system_metadata['image_cmdline']))
 	    except:
-	    	LOG.info("No user defined command line args. Continuing without them.")
-            	cmdlinearg=NULL
+	    	LOG.info("No user defined command line args. The unikernel Application may not run correctly.  Continuing without them.")
+            	bincmdline = None
 	    net_cmdline = '"net": {,, "if": "vioif0",, "type": "inet",, "method": "dhcp",,  },,'
 	    #guest.os_cmdline = '{,, "net": {,, "if": "vioif0",, "type": "inet",, "method": "dhcp",,  },, %s },,' %(cmdlinearg)
     	    #
@@ -4547,7 +4546,7 @@ class LibvirtDriver(driver.ComputeDriver):
 	    else:
     		secondary_disk = None
 	    if secondary_disk:
-		secDskCmd = ('"blk": {,, "source": "dev",, "path": "/dev/ld1",, "fstype": "blk",, "mountpoint": "/data",, },, ')
+		secDskCmd = ('"blk": {,, "source": "dev",, "path": "/dev/%s",, "fstype": "blk",, "mountpoint": "/data",, },, ' % (secondary_disk))
 
             storage_configs = self._get_guest_storage_config(
                     instance, image_meta, disk_info, rescue, block_device_info,
@@ -4569,14 +4568,15 @@ class LibvirtDriver(driver.ComputeDriver):
                 guest.add_device(config)
 	    #instruct the kernel to configure an internal network device
 	    #************THE FOLLOWING NEEDS VERIFICATION****************
-	    """ Since unikernels never get to user space. The kernel does not reach a point where network devices are configured.
+	    """ Since unikernels never get to user space. The kernel does not reach a point where network devices are configured/user configurable.
 		instead, we must manually instruct the unikernel (rumprun) that we need the following device configured.
 		This instruction will always be here by default for a unikernel since openstack always attaches to at least 1 network """
             
 	    net_cmdline = '"net": {,, "if": "vioif0",, "type": "inet",, "method": "dhcp",,  },,'
-	    guest.os_cmdline += net_cmdline	#network
-	    #guest.os_cmdline += secDskCmd	#disk
-	    guest.os_cmdline += ('"cmdline": "root=%s",,' % (secondary_disk))	#specify root device
+	    guest.os_cmdline += net_cmdline	#network rumprun config
+	    if secondary_disk:
+	    	guest.os_cmdline += secDskCmd	#disk	rumprun config
+	    guest.os_cmdline += ('"cmdline": "root=%s %s",,' % (root_device_name,bincmdline))	#specify root device (kernel command line), should there be a console?
 	    guest.os_cmdline += ' },,'		#End
 	    #No console
             #No pointer
@@ -4598,7 +4598,7 @@ class LibvirtDriver(driver.ComputeDriver):
             #No agent
             #No PCI devices
             #No watchdogs
-            #No balloon
+            #No balloon ... looks like livbirt automatically adds one of these. The unikernel will complain but its not fatal.
             #end configuration
             return guest
             
