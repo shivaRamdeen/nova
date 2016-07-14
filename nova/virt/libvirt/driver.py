@@ -4576,7 +4576,7 @@ class LibvirtDriver(driver.ComputeDriver):
 	    guest.os_cmdline += net_cmdline	#network rumprun config
 	    # if secondary_disk:
 	    #	guest.os_cmdline += secDskCmd	#disk	rumprun config
-	    guest.os_cmdline += ('"cmdline": "root=%s %s",,' % (root_device_name,bincmdline))	#specify root device (kernel command line), should there be a console?
+	    guest.os_cmdline += ('"cmdline": "root=/dev/vdb %s",,' % (bincmdline))	#specify root device (kernel command line), should there be a console?
 	    guest.os_cmdline += ' },,'		#End
 	    #No console
             #No pointer
