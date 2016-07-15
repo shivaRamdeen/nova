@@ -4539,15 +4539,31 @@ class LibvirtDriver(driver.ComputeDriver):
                 # NOTE(yamahata):
                 # for nova.api.ec2.cloud.CloudController.get_metadata()
                 instance.root_device_name = root_device_name
+	
+	    SecDskCmd = ''			#kernel cmdline for mounting disk
+	    DMLen = len(disk_mapping)		#length of disk_mapping tells total number if disks/drives
+	    DMKeys = list(disk_mapping.keys())	#keys in disk_mapping dict
+	    DMOffset = DMLen - 3		#number of user disk (expected?)
+	    if (DMOffset > 0):
+		UDC=0	#counter for number of user disks found
+		for DMIndex in range(1,DMLen):
+			if DMKeys[DMLen - DMIndex][0] == 'u':	#check if current disk is a user disk i.e. preffixed with 'u'
+				UDC += 1			#increment counter
+				secDskCmd += secDskCmd = (' "blk": {,, "source": "dev",, "path": "/dev/ld%sa",, "fstype": "blk",, "mountpoint": "/disk%s",, },, ' % (USC,UDC))
+
+	    else:
+		#no mounting to do...for now, consider mounting root, ie /dev/vda
+		secDskCmd=''
+
 
 	    #EXPERIMENTAL! setting cmdline args for mounting a secondary disk
-	    if '/dev/vdb' in disk_mapping:
-		secondary_disk=("/dev/%s" % disk_mapping['/dev/vdb']['dev'])
-		secondary_disk="/dev/ld1a"
-	    else:
-    		secondary_disk = None
-	    if secondary_disk:
-		secDskCmd = ('"blk": {,, "source": "dev",, "path": "%s",, "fstype": "blk",, "mountpoint": "/data",, },, ' % (secondary_disk))
+	    #if '/dev/vdb' in disk_mapping:
+	    #	secondary_disk=("/dev/%s" % disk_mapping['/dev/vdb']['dev'])
+	    #	secondary_disk="/dev/ld1a"
+	    #else:
+    	    #	secondary_disk = None
+	    #if secondary_disk:
+	    #	secDskCmd = ('"blk": {,, "source": "dev",, "path": "%s",, "fstype": "blk",, "mountpoint": "/data",, },, ' % (secondary_disk))
 
             storage_configs = self._get_guest_storage_config(
                     instance, image_meta, disk_info, rescue, block_device_info,
@@ -4558,6 +4574,10 @@ class LibvirtDriver(driver.ComputeDriver):
 		LOG.debug("!!!!!!!!SHIVAAAA!!!!!!!!!::: %s" % (config))
 		LOG.debug("!!!!!!!!!!!!!!!!!!!!!!!!!!")
 		LOG.debug("!!!!!!!!!!!!!!!!!!!!!!!!!!")
+	    
+	    LOG.debug("%s" % (len(disk_mapping)))
+	    LOG.debug("%s" % (list(disk_mapping.keys())))
+
 	    """ Rumprun unikernels automatically detect block devices that openstack attaches however, it does not mount them.
 	    We add the following kernel cmdline to instruct the kernel to mount the device"""
             LOG.debug("%s",(disk_info))
@@ -4576,7 +4596,7 @@ class LibvirtDriver(driver.ComputeDriver):
 	    net_cmdline = '"net": {,, "if": "vioif0",, "type": "inet",, "method": "dhcp",,  },,'
 	    guest.os_cmdline += net_cmdline	#network rumprun config
 	    # if secondary_disk:
-	    guest.os_cmdline += secDskCmd	#disk	rumprun config
+	    guest.os_cmdline += secDskCmd	#disk rumprun config
 	    guest.os_cmdline += ('"cmdline": "root=/dev/vda %s",,' % (bincmdline))	#specify root device (kernel command line), should there be a console?
 	    guest.os_cmdline += ' },,'		#End
 	    #No console
