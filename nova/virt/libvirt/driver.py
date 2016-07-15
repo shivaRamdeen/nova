@@ -4549,11 +4549,11 @@ class LibvirtDriver(driver.ComputeDriver):
 		for DMIndex in range(1,DMLen):
 			if DMKeys[DMLen - DMIndex][0] == 'u':	#check if current disk is a user disk i.e. preffixed with 'u'
 				UDC += 1			#increment counter
-				secDskCmd += (' "blk": {,, "source": "dev",, "path": "/dev/ld%sa",, "fstype": "blk",, "mountpoint": "/disk%s",, },, ' % (USC,UDC))
+				SecDskCmd += (' "blk": {,, "source": "dev",, "path": "/dev/ld%sa",, "fstype": "blk",, "mountpoint": "/disk%s",, },, ' % (USC,UDC))
 
 	    else:
 		#no mounting to do...for now, consider mounting root, ie /dev/vda
-		secDskCmd=''
+		SecDskCmd=''
 
 
 	    #EXPERIMENTAL! setting cmdline args for mounting a secondary disk
@@ -4596,7 +4596,7 @@ class LibvirtDriver(driver.ComputeDriver):
 	    net_cmdline = '"net": {,, "if": "vioif0",, "type": "inet",, "method": "dhcp",,  },,'
 	    guest.os_cmdline += net_cmdline	#network rumprun config
 	    # if secondary_disk:
-	    guest.os_cmdline += secDskCmd	#disk rumprun config
+	    guest.os_cmdline += SecDskCmd	#disk rumprun config
 	    guest.os_cmdline += ('"cmdline": "root=/dev/vda %s",,' % (bincmdline))	#specify root device (kernel command line), should there be a console?
 	    guest.os_cmdline += ' },,'		#End
 	    #No console
