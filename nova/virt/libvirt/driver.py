@@ -4543,6 +4543,7 @@ class LibvirtDriver(driver.ComputeDriver):
 	    #EXPERIMENTAL! setting cmdline args for mounting a secondary disk
 	    if '/dev/vdb' in disk_mapping:
 		secondary_disk=("/dev/%s" % disk_mapping['/dev/vdb']['dev'])
+		secondary_disk="/dev/ld1a"
 	    else:
     		secondary_disk = None
 	    if secondary_disk:
@@ -4575,8 +4576,8 @@ class LibvirtDriver(driver.ComputeDriver):
 	    net_cmdline = '"net": {,, "if": "vioif0",, "type": "inet",, "method": "dhcp",,  },,'
 	    guest.os_cmdline += net_cmdline	#network rumprun config
 	    # if secondary_disk:
-	    #	guest.os_cmdline += secDskCmd	#disk	rumprun config
-	    guest.os_cmdline += ('"cmdline": "root=/dev/vdb %s",,' % (bincmdline))	#specify root device (kernel command line), should there be a console?
+	    guest.os_cmdline += secDskCmd	#disk	rumprun config
+	    guest.os_cmdline += ('"cmdline": "root=/dev/vda %s",,' % (bincmdline))	#specify root device (kernel command line), should there be a console?
 	    guest.os_cmdline += ' },,'		#End
 	    #No console
             #No pointer
