@@ -4426,8 +4426,14 @@ class LibvirtDriver(driver.ComputeDriver):
         """
         #SHIVA::UNIKERNEL_HACK
         #check if unikernel is in image_meta.tag if image_meta.tag == "unikernel", then:
-        if instance.system_metadata['image_kernel-type'] == 'unikernel':
+        try:
+        	if instance.system_metadata['image_kernel-type'] == 'unikernel':
+        	unikernel=True
+        except:
+        	LOG.debug("Kernel-type not defined in Glance image")
+        	unikernel=None
         	
+        if unikernel:	
             flavor = instance.flavor
             inst_path = libvirt_utils.get_instance_path(instance)
             disk_mapping = disk_info['mapping']
