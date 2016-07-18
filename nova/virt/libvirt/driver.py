@@ -4430,7 +4430,7 @@ class LibvirtDriver(driver.ComputeDriver):
         	if instance.system_metadata['image_kernel-type'] == 'unikernel':
         		unikernel=True
         except:
-        	LOG.debug("Kernel-type not defined in Glance image")
+        	LOG.debug(_LE("Kernel-type not defined in Glance image"))
         	unikernel=None
         	
         if unikernel:	
@@ -4457,7 +4457,7 @@ class LibvirtDriver(driver.ComputeDriver):
 	    try:
 		bincmdline  = ('%s' % (instance.system_metadata['image_cmdline']))
 	    except:
-	    	LOG.info("No user defined command line args. The unikernel Application may not run correctly.  Continuing without them.")
+	    	LOG.info(_LE("No user defined command line args. The unikernel Application may not run correctly.  Continuing without them."))
             	bincmdline = None
 	    #always instruct the unikernl to setup a network card with dhcp for networking the kernel
 	    net_cmdline = '"net": {,, "if": "vioif0",, "type": "inet",, "method": "dhcp",,  },,'
@@ -4468,8 +4468,7 @@ class LibvirtDriver(driver.ComputeDriver):
                     disk_mapping['root']['dev'])
             else:
                 root_device_name = None
-    	    LOG.debug("DiskMappings: %s" %(disk_mapping['/dev/vdb']['dev']))
-            LOG.debug("Root Device Name::: %s" % (root_device_name))
+                
 	    if root_device_name:
                 # NOTE(yamahata):
                 # for nova.api.ec2.cloud.CloudController.get_metadata()
