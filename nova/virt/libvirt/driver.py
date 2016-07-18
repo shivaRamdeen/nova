@@ -4428,7 +4428,7 @@ class LibvirtDriver(driver.ComputeDriver):
         #check if unikernel is in image_meta.tag if image_meta.tag == "unikernel", then:
         try:
         	if instance.system_metadata['image_kernel-type'] == 'unikernel':
-        	unikernel=True
+        		unikernel=True
         except:
         	LOG.debug("Kernel-type not defined in Glance image")
         	unikernel=None
