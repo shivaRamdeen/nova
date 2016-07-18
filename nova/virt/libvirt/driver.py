@@ -4546,11 +4546,11 @@ class LibvirtDriver(driver.ComputeDriver):
 	    DMOffset = DMLen - 3		#number of user disk (expected?)
 	    if (DMOffset > 0):
 		UDC=0	#counter for number of user disks found
-		for DMIndex in range(1,DMLen):
-			if DMKeys[DMLen - DMIndex][0] == 'u':	#check if current disk is a user disk i.e. preffixed with 'u'
+		for DMIndex in range(1,DMLen+1):
+			LOG.info("%s" % (DMKeys[DMLen - DMIndex][0]))
+			if DMKeys[DMLen - DMIndex][0:5] == '/dev/':	#check if current disk is a user disk i.e. preffixed with '/dev/'
 				UDC += 1			#increment counter
-				SecDskCmd += (' "blk": {,, "source": "dev",, "path": "/dev/ld%sa",, "fstype": "blk",, "mountpoint": "/disk%s",, },, ' % (USC,UDC))
-
+				SecDskCmd += (' "blk": {,, "source": "dev",, "path": "/dev/ld%sa",, "fstype": "blk",, "mountpoint": "/disk%s",, },, ' % (UDC,UDC))
 	    else:
 		#no mounting to do...for now, consider mounting root, ie /dev/vda
 		SecDskCmd=''
