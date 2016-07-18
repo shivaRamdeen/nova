@@ -4427,46 +4427,12 @@ class LibvirtDriver(driver.ComputeDriver):
         #SHIVA::UNIKERNEL_HACK
         #check if unikernel is in image_meta.tag if image_meta.tag == "unikernel", then:
         if instance.system_metadata['image_kernel-type'] == 'unikernel':
-            LOG.info('Booting instance as a unikernel')
-            #set the following parameters.
-            """ the following are parameters of the guest object which is returned at the end.
-            self.uuid = None -
-            self.name = None -
-            self.memory = 500 * units.Mi -
-            self.membacking = None 
-            self.memtune = None
-            self.numatune = None
-            self.vcpus = 1 -
-            self.cpuset = None -
-            self.cpu = None -
-            self.cputune = None
-            self.features = []
-            self.clock = None -
-            self.sysinfo = None
-            self.os_type = None
-            self.os_loader = None
-            self.os_loader_type = None
-            self.os_kernel = None -
-            self.os_initrd = None
-            self.os_cmdline = None #we will set this later based on user_data
-            self.os_root = None
-            self.os_init_path = None
-            self.os_boot_dev = []
-            self.os_smbios = None
-            self.os_mach_type = None
-            self.os_bootmenu = False
-            self.devices = []
-            self.metadata = []
-            self.idmaps = []
-            self.perf_events = []"""
-    
-            #we will populate the parameters as we see fit.
+        	
             flavor = instance.flavor
             inst_path = libvirt_utils.get_instance_path(instance)
             disk_mapping = disk_info['mapping']
-            ##we dont want any disk mapping at this time (Does a unikernel need a disk?)
-            virt_type = CONF.libvirt.virt_type #consider hard coding? since QEMU is the only virt_type that we are sure about.
-            ##initialize the guest object
+            virt_type = CONF.libvirt.virt_type 
+            #initialize the guest object
             guest = vconfig.LibvirtConfigGuest()
             guest.virt_type = virt_type
             guest.name = instance.name
@@ -4475,59 +4441,22 @@ class LibvirtDriver(driver.ComputeDriver):
             guest.vcpus = flavor.vcpus
 	    #opening the kernel command line args
 	    guest.os_cmdline = '{,, '
-            
-            #allowed_cpus = hardware.get_vcpu_pin_set()
-            
-            #we dont need pci devices yet...look into this!
-            #pci_devs = pci_manager.get_instance_pci_devs(instance, 'all')
-            
-            #guest_numa_config = self._get_guest_numa_config(
-            #    instance.numa_topology, flavor, allowed_cpus, image_meta)
-            #
-            #guest.cpuset = guest_numa_config.cpuset
-            #guest.cputune = guest_numa_config.cputune
-            #guest.numatune = guest_numa_config.numatune
-            #
-            #No memory backing (hugepages etc.)
-            #No metadata config
-            #No idmaps
-            #No perf events
-            #No cputune
-            #Do CPU config:
-            #guest.cpu = self._get_guest_cpu_config(
-            #    flavor, image_meta, guest_numa_config.numaconfig,
-            #    instance.numa_topology)
-            #
-            #sync guest vcpu model
-            #instance.vcpu_model = self._cpu_config_to_vcpu_model(
-            #    guest.cpu, instance.vcpu_model)
-            #
             #set os type: 
             guest.os_type = self._get_guest_os_type(virt_type)
-            #
-            #configure guest by virt type
-            #caps = self._host.get_capabilities()
-            
-            #self._configure_guest_by_virt_type(guest, virt_type, caps, instance,
-            #                                   image_meta, flavor,
-            #                                   root_device_name)
-            #
             #set kernel path
             guest.os_kernel = os.path.join(inst_path, "kernel")
-            #set cmdline to user defined variable or leave empty.
+            #set bincmdlin allows the user to give the unikernel application aruments
+            #by setting the cmdline variable in the glance image.
 	    #Get user defined kernel cmdline args.
 	    try:
 		bincmdline  = ('%s' % (instance.system_metadata['image_cmdline']))
 	    except:
 	    	LOG.info("No user defined command line args. The unikernel Application may not run correctly.  Continuing without them.")
             	bincmdline = None
+	    #always instruct the unikernl to setup a network card with dhcp for networking the kernel
 	    net_cmdline = '"net": {,, "if": "vioif0",, "type": "inet",, "method": "dhcp",,  },,'
-	    #guest.os_cmdline = '{,, "net": {,, "if": "vioif0",, "type": "inet",, "method": "dhcp",,  },, %s },,' %(cmdlinearg)
-    	    #
-            #
-            #No Features
-            #No clock
-            #No storgae configs and device maps
+	    
+            #Storage configs and device maps
             if 'root' in disk_mapping:
                 root_device_name = block_device.prepend_dev(
                     disk_mapping['root']['dev'])
@@ -4539,7 +4468,12 @@ class LibvirtDriver(driver.ComputeDriver):
                 # NOTE(yamahata):
                 # for nova.api.ec2.cloud.CloudController.get_metadata()
                 instance.root_device_name = root_device_name
-	
+                
+	    #Setting cmdline args needed to mount disks inside the kernel
+	    #disks are monted in the order they are specified in the 'nova boot' command
+	    #Users have no access to define the mount point.
+	    #mount points are generic. The first block device will be mounted at /disk1, the second at /disk2 etc.
+	    
 	    SecDskCmd = ''			#kernel cmdline for mounting disk
 	    DMLen = len(disk_mapping)		#length of disk_mapping tells total number if disks/drives
 	    DMKeys = list(disk_mapping.keys())	#keys in disk_mapping dict
@@ -4554,56 +4488,28 @@ class LibvirtDriver(driver.ComputeDriver):
 	    else:
 		#no mounting to do...for now, consider mounting root, ie /dev/vda
 		SecDskCmd=''
-
-
-	    #EXPERIMENTAL! setting cmdline args for mounting a secondary disk
-	    #if '/dev/vdb' in disk_mapping:
-	    #	secondary_disk=("/dev/%s" % disk_mapping['/dev/vdb']['dev'])
-	    #	secondary_disk="/dev/ld1a"
-	    #else:
-    	    #	secondary_disk = None
-	    #if secondary_disk:
-	    #	secDskCmd = ('"blk": {,, "source": "dev",, "path": "%s",, "fstype": "blk",, "mountpoint": "/data",, },, ' % (secondary_disk))
-
+		
             storage_configs = self._get_guest_storage_config(
                     instance, image_meta, disk_info, rescue, block_device_info,
                     flavor, guest.os_type)
-	    LOG.debug("%s" % (storage_configs))
             for config in storage_configs:
                 guest.add_device(config)
-		LOG.debug("!!!!!!!!SHIVAAAA!!!!!!!!!::: %s" % (config))
-		LOG.debug("!!!!!!!!!!!!!!!!!!!!!!!!!!")
-		LOG.debug("!!!!!!!!!!!!!!!!!!!!!!!!!!")
-	    
-	    LOG.debug("%s" % (len(disk_mapping)))
-	    LOG.debug("%s" % (list(disk_mapping.keys())))
-
-	    """ Rumprun unikernels automatically detect block devices that openstack attaches however, it does not mount them.
-	    We add the following kernel cmdline to instruct the kernel to mount the device"""
-            LOG.debug("%s",(disk_info))
+                
             #VIFs:
             for vif in network_info:
                 config = self.vif_driver.get_config(
                     instance, vif, image_meta,
                     flavor, virt_type, self._host)
                 guest.add_device(config)
-	    #instruct the kernel to configure an internal network device
-	    #************THE FOLLOWING NEEDS VERIFICATION****************
-	    """ Since unikernels never get to user space. The kernel does not reach a point where network devices are configured/user configurable.
-		instead, we must manually instruct the unikernel (rumprun) that we need the following device configured.
-		This instruction will always be here by default for a unikernel since openstack always attaches to at least 1 network """
-            
+                
+	   
 	    net_cmdline = '"net": {,, "if": "vioif0",, "type": "inet",, "method": "dhcp",,  },,'
 	    guest.os_cmdline += net_cmdline	#network rumprun config
-	    # if secondary_disk:
 	    guest.os_cmdline += SecDskCmd	#disk rumprun config
 	    guest.os_cmdline += ('"cmdline": "root=/dev/vda %s",,' % (bincmdline))	#specify root device (kernel command line), should there be a console?
 	    guest.os_cmdline += ' },,'		#End
-	    #No console
-            #No pointer
-            #No Channels
-            #
-            #setup vnc...consider setting up vnc always
+	    
+            #setup vnc.
             add_video_driver = False
             if ((CONF.vnc.enabled and
                  virt_type not in ('lxc', 'uml'))):
@@ -4615,11 +4521,7 @@ class LibvirtDriver(driver.ComputeDriver):
                 add_video_driver = True
             if add_video_driver:
                 self._add_video_driver(guest, image_meta, flavor)
-            #
-            #No agent
-            #No PCI devices
-            #No watchdogs
-            #No balloon ... looks like livbirt automatically adds one of these. The unikernel will complain but its not fatal.
+                
             #end configuration
             return guest
             
