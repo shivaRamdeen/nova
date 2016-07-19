@@ -4521,6 +4521,7 @@ class LibvirtDriver(driver.ComputeDriver):
 	    
 	    #add console for mirage to log output.
 	    if unikernelType == 'mirage':
+	    	caps = self._host.get_capabilities()
 	    	consolepty = self._create_consoles(virt_type, guest, instance, flavor,
                 	                               image_meta, caps)
             	if virt_type != 'parallels':
