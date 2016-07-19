@@ -4451,7 +4451,6 @@ class LibvirtDriver(driver.ComputeDriver):
             guest.memory = flavor.memory_mb * units.Ki
             guest.vcpus = flavor.vcpus
 	    #opening the kernel command line args
-	    guest.os_cmdline = '{,, '
             #set os type: 
             guest.os_type = self._get_guest_os_type(virt_type)
             #set kernel path
@@ -4513,7 +4512,8 @@ class LibvirtDriver(driver.ComputeDriver):
                 guest.add_device(config)
                 
 	    if unikernelType == "rumprun":
-	    	net_cmdline = '"net": {,, "if": "vioif0",, "type": "inet",, "method": "dhcp",,  },,'
+	        guest.os_cmdline = '{,, '
+		net_cmdline = '"net": {,, "if": "vioif0",, "type": "inet",, "method": "dhcp",,  },,'
 	    	guest.os_cmdline += net_cmdline	#network rumprun config
 	    	guest.os_cmdline += SecDskCmd	#disk rumprun config
 	    	guest.os_cmdline += ('"cmdline": "root=/dev/vda %s",,' % (bincmdline))	#specify root device (kernel command line), should there be a console?
