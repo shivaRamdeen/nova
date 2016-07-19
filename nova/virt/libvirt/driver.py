@@ -4519,7 +4519,16 @@ class LibvirtDriver(driver.ComputeDriver):
 	    	guest.os_cmdline += ('"cmdline": "root=/dev/vda %s",,' % (bincmdline))	#specify root device (kernel command line), should there be a console?
 	    	guest.os_cmdline += ' },,'		#End
 	    
+	    #add console for mirage to log output.
+	    if unikernelType == 'mirage':
+	    	consolepty = self._create_consoles(virt_type, guest, instance, flavor,
+                	                               image_meta, caps)
+            	if virt_type != 'parallels':
+                	consolepty.type = "pty"
+                	guest.add_device(consolepty)
+            
             #setup vnc.
+            
             add_video_driver = False
             if ((CONF.vnc.enabled and
                  virt_type not in ('lxc', 'uml'))):
