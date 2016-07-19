@@ -4427,8 +4427,10 @@ class LibvirtDriver(driver.ComputeDriver):
         #SHIVA::UNIKERNEL_HACK
         #check if unikernel is in image_meta.tag if image_meta.tag == "unikernel", then:
         try:
-        	if instance.system_metadata['image_kernel-type'] == 'unikernel':
+        	#if instance.system_metadata['image_kernel-type'] == 'unikernel':
+		if instance.system_metadata['image_kernel-type'] in ['rumprun','mirage' ]:
         		unikernel=True
+			unikernelType= instance.system_metadata['image_kernel-type']
         except:
         	LOG.debug(_LE("Kernel-type not defined in Glance image"))
         	unikernel=None
@@ -4507,12 +4509,12 @@ class LibvirtDriver(driver.ComputeDriver):
                     flavor, virt_type, self._host)
                 guest.add_device(config)
                 
-	   
-	    net_cmdline = '"net": {,, "if": "vioif0",, "type": "inet",, "method": "dhcp",,  },,'
-	    guest.os_cmdline += net_cmdline	#network rumprun config
-	    guest.os_cmdline += SecDskCmd	#disk rumprun config
-	    guest.os_cmdline += ('"cmdline": "root=/dev/vda %s",,' % (bincmdline))	#specify root device (kernel command line), should there be a console?
-	    guest.os_cmdline += ' },,'		#End
+	    if unikernelType == "rumprun":
+	    	net_cmdline = '"net": {,, "if": "vioif0",, "type": "inet",, "method": "dhcp",,  },,'
+	    	guest.os_cmdline += net_cmdline	#network rumprun config
+	    	guest.os_cmdline += SecDskCmd	#disk rumprun config
+	    	guest.os_cmdline += ('"cmdline": "root=/dev/vda %s",,' % (bincmdline))	#specify root device (kernel command line), should there be a console?
+	    	guest.os_cmdline += ' },,'		#End
 	    
             #setup vnc.
             add_video_driver = False
